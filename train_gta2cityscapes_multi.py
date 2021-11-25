@@ -41,11 +41,7 @@ NUM_STEPS = 250000
 NUM_STEPS_STOP = 150000  # early stopping
 POWER = 0.9
 RANDOM_SEED = 1234
-<<<<<<< HEAD
 RESTORE_FROM = 'model/DeepLab_resnet_pretrained_init-f81d91e8.pth'
-=======
-RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth'
->>>>>>> d94a25a74d320c5476dea11ee5b31b64e6029923
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'

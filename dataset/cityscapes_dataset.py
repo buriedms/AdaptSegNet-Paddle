@@ -55,7 +55,7 @@ class cityscapesDataSet(data.Dataset):
 
 
 if __name__ == '__main__':
-    dst = GTA5DataSet("./data", is_transform=True)
+    dst = cityscapesDataSet("./data", is_transform=True)
     trainloader = data.DataLoader(dst, batch_size=4)
     for i, data in enumerate(trainloader):
         imgs, labels = data
