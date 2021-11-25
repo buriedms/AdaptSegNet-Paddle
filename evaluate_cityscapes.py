@@ -90,6 +90,7 @@ def main():
     if args.model == 'DeeplabMulti':
         model = DeeplabMulti(num_classes=args.num_classes)
 
+
     if args.restore_from[:4] == 'http' :
         saved_state_dict = model_zoo.load_url(args.restore_from)
     else:
@@ -102,7 +103,6 @@ def main():
     model.load_state_dict(saved_state_dict)
 
     model.eval()
-    # model.cuda(gpu0)
 
     testloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=1, shuffle=False, pin_memory=True)
@@ -119,6 +119,7 @@ def main():
         image, _, name = batch
         if args.model == 'DeeplabMulti':
             output1, output2 = model(Variable(image, volatile=True))
+
             output = interp(output2).cpu().data[0].numpy()
         elif args.model == 'DeeplabVGG' or args.model == 'Oracle':
             output = model(Variable(image, volatile=True).cuda(gpu0))
