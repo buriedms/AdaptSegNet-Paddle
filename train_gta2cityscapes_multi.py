@@ -57,6 +57,24 @@ GAN = 'Vanilla'
 TARGET = 'cityscapes'
 SET = 'train'
 
+def gen_logger(save_path=None,name=None,chlr=False,mode='w'):
+    import logging
+    import os
+    name='' if not name else name
+    save_path='' if not save_path else save_path
+    file_path=os.path.join(save_path,name)
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s -  %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO ,
+        filename=file_path,
+        filemode=mode
+    )
+    logger=logging.getLogger()
+    if chlr and file_path:
+        chlr = logging.StreamHandler()  # 输出到控制台的handler
+        logger.addHandler(chlr)
+    return logger
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -153,6 +171,8 @@ def loss_calc(pred, label, gpu):
 
 def main():
     """Create the model and start the training."""
+
+    logger=gen_logger(save_path=args.checkpoint_dir,name=f'{args.model}_train.log')
 
     w, h = map(int, args.input_size.split(','))
     input_size = (w, h)
@@ -366,17 +386,14 @@ def main():
         optimizer_D2.step()
 
         print('exp = {}'.format(args.checkpoint_dir))
-        # print(loss_seg_value1)
-        # print(loss_seg_value2)
-        # print(loss_adv_target_value1)
-        # print(loss_adv_target_value2)
-        # print(loss_D_value1)
-        # print(loss_D_value2)
+        logger.info('exp = {}'.format(args.checkpoint_dir))
         print(
             'iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.4f}, loss_adv2 = {5:.4f} loss_D1 = {6:.4f} loss_D2 = {7:.4f}'.format(
                 i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1,
                 loss_adv_target_value2, loss_D_value1, loss_D_value2))
-
+        logger.info('iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.4f}, loss_adv2 = {5:.4f} loss_D1 = {6:.4f} loss_D2 = {7:.4f}'.format(
+                i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1,
+                loss_adv_target_value2, loss_D_value1, loss_D_value2))
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
             paddle.save(model.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '.pth'))
