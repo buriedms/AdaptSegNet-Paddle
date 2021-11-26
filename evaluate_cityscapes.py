@@ -5,21 +5,22 @@ import numpy as np
 import sys
 from packaging import version
 
-import torch
-from torch.autograd import Variable
-import torchvision.models as models
-import torch.nn.functional as F
-from torch.utils import data, model_zoo
-from model.deeplab import Res_Deeplab
+# import torch
+# from torch.autograd import Variable
+# from torch.utils import data, model_zoo
+import paddle
+import paddle.nn as nn
+from paddle.io import DataLoader
+
 from model.deeplab_multi import DeeplabMulti
-from model.deeplab_vgg import DeeplabVGG
 from dataset.cityscapes_dataset import cityscapesDataSet
+from compute_iou import compute_mIoU
 from collections import OrderedDict
 import os
 from PIL import Image
 
 import matplotlib.pyplot as plt
-import torch.nn as nn
+
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 DATA_DIRECTORY = './data/Cityscapes/data'
@@ -29,7 +30,7 @@ SAVE_PATH = './result/cityscapes'
 IGNORE_LABEL = 255
 NUM_CLASSES = 19
 NUM_STEPS = 500 # Number of images in the validation set.
-RESTORE_FROM = '../model/GTA2Cityscapes_multi-ed35151c.pth'
+RESTORE_FROM = 'model/GTA2Cityscapes_multi-ed35151c.pdparams'
 SET = 'val'
 
 MODEL = 'DeeplabMulti'
@@ -74,6 +75,10 @@ def get_arguments():
                         help="choose evaluation set.")
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
+    parser.add_argument('--devkit_dir', default='dataset/cityscapes_list',
+                        help='base directory of cityscapes')
+    parser.add_argument('--gt_dir', default=os.path.join(DATA_DIRECTORY,'gtFine'), type=str,
+                        help='directory which stores CityScapes val gt images')
     return parser.parse_args()
 
 
@@ -87,43 +92,32 @@ def main():
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 
-    if args.model == 'DeeplabMulti':
-        model = DeeplabMulti(num_classes=args.num_classes)
-
-
-    if args.restore_from[:4] == 'http' :
-        saved_state_dict = model_zoo.load_url(args.restore_from)
-    else:
-        saved_state_dict = torch.load(args.restore_from,map_location='cpu') # todo cpu
+    model = DeeplabMulti(num_classes=args.num_classes)
+    saved_state_dict = paddle.load(args.restore_from)
+    model.set_state_dict(saved_state_dict)
     ### for running different versions of pytorch
     model_dict = model.state_dict()
     saved_state_dict = {k: v for k, v in saved_state_dict.items() if k in model_dict}
     model_dict.update(saved_state_dict)
     ###
-    model.load_state_dict(saved_state_dict)
+    model.set_state_dict(saved_state_dict)
 
     model.eval()
 
-    testloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
-                                    batch_size=1, shuffle=False, pin_memory=True)
+    testloader = DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
+                                    batch_size=1, shuffle=False)
 
 
-    if version.parse(torch.__version__) >= version.parse('0.4.0'):
-        interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
-    else:
-        interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
+    interp = nn.Upsample(size=(1024, 2048), mode='bilinear', align_corners=True)
 
     for index, batch in enumerate(testloader):
         if index % 100 == 0:
             print ('%d processd' % index)
         image, _, name = batch
-        if args.model == 'DeeplabMulti':
-            output1, output2 = model(Variable(image, volatile=True))
+        image = paddle.to_tensor(image,dtype=paddle.float32)
+        output1, output2 = model(image)
 
-            output = interp(output2).cpu().data[0].numpy()
-        elif args.model == 'DeeplabVGG' or args.model == 'Oracle':
-            output = model(Variable(image, volatile=True).cuda(gpu0))
-            output = interp(output).cpu().data[0].numpy()
+        output = interp(output2).cpu().numpy()[0]
 
         output = output.transpose(1,2,0)
         output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
@@ -134,6 +128,7 @@ def main():
         name = name[0].split('/')[-1]
         output.save('%s/%s' % (args.save, name))
         output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
+    compute_mIoU(gt_dir=args.gt_dir,pred_dir=args.save,devkit_dir=args.devkit)
 
 
 if __name__ == '__main__':

@@ -4,13 +4,12 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import collections
-import torch
-import torchvision
-from torch.utils import data
+from paddle.io import Dataset,DataLoader
+import paddlevision
 from PIL import Image
 
 
-class GTA5DataSet(data.Dataset):
+class GTA5DataSet(Dataset):
     def __init__(self, root, list_path, max_iters=None, crop_size=(321, 321), mean=(128, 128, 128), scale=True, mirror=True, ignore_label=255):
         self.root = root
         self.list_path = list_path
@@ -72,11 +71,11 @@ class GTA5DataSet(data.Dataset):
 
 if __name__ == '__main__':
     dst = GTA5DataSet("./data", is_transform=True)
-    trainloader = data.DataLoader(dst, batch_size=4)
+    trainloader = DataLoader(dst, batch_size=4)
     for i, data in enumerate(trainloader):
         imgs, labels = data
         if i == 0:
-            img = torchvision.utils.make_grid(imgs).numpy()
+            img = paddlevision.utils.make_grid(imgs).numpy()
             img = np.transpose(img, (1, 2, 0))
             img = img[:, :, ::-1]
             plt.imshow(img)

@@ -1,19 +1,18 @@
-import torch.nn as nn
-import torch.nn.functional as F
+import paddle.nn as nn
 
 
-class FCDiscriminator(nn.Module):
+class FCDiscriminator(nn.Layer):
 
 	def __init__(self, num_classes, ndf = 64):
 		super(FCDiscriminator, self).__init__()
 
-		self.conv1 = nn.Conv2d(num_classes, ndf, kernel_size=4, stride=2, padding=1)
-		self.conv2 = nn.Conv2d(ndf, ndf*2, kernel_size=4, stride=2, padding=1)
-		self.conv3 = nn.Conv2d(ndf*2, ndf*4, kernel_size=4, stride=2, padding=1)
-		self.conv4 = nn.Conv2d(ndf*4, ndf*8, kernel_size=4, stride=2, padding=1)
-		self.classifier = nn.Conv2d(ndf*8, 1, kernel_size=4, stride=2, padding=1)
+		self.conv1 = nn.Conv2D(num_classes, ndf, kernel_size=4, stride=2, padding=1)
+		self.conv2 = nn.Conv2D(ndf, ndf*2, kernel_size=4, stride=2, padding=1)
+		self.conv3 = nn.Conv2D(ndf*2, ndf*4, kernel_size=4, stride=2, padding=1)
+		self.conv4 = nn.Conv2D(ndf*4, ndf*8, kernel_size=4, stride=2, padding=1)
+		self.classifier = nn.Conv2D(ndf*8, 1, kernel_size=4, stride=2, padding=1)
 
-		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
+		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2)
 		#self.up_sample = nn.Upsample(scale_factor=32, mode='bilinear')
 		#self.sigmoid = nn.Sigmoid()
 
