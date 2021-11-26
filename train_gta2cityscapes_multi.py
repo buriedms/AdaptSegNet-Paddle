@@ -393,7 +393,6 @@ def main():
             paddle.save(model_D2.state_dict(),
                         osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '_D2.pdparams'))
             break
-
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking checkpoint ...')
             paddle.save(model.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '.pdparams'))
