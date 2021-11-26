@@ -27,7 +27,7 @@ IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32
 MODEL = 'DeepLab'
 BATCH_SIZE = 1
 ITER_SIZE = 1
-NUM_WORKERS = 0 # todo 4 -> 0
+NUM_WORKERS = 0  # todo 4 -> 0
 DATA_DIRECTORY = './data/GTA5'
 DATA_LIST_PATH = './dataset/gta5_list/train.txt'
 IGNORE_LABEL = 255
@@ -39,7 +39,7 @@ LEARNING_RATE = 2.5e-4
 MOMENTUM = 0.9
 NUM_CLASSES = 19
 NUM_STEPS = 250000
-NUM_STEPS_STOP = 150000  # early stopping
+NUM_STEPS_STOP = 150000  # early stopping # todo 150000  ---> 3
 POWER = 0.9
 RANDOM_SEED = 1234
 RESTORE_FROM = 'model/DeepLab_resnet_pretrained_init-f81d91e8.pdparams'
@@ -56,25 +56,6 @@ GAN = 'Vanilla'
 
 TARGET = 'cityscapes'
 SET = 'train'
-
-def gen_logger(save_path=None,name=None,chlr=False,mode='w'):
-    import logging
-    import os
-    name='' if not name else name
-    save_path='' if not save_path else save_path
-    file_path=os.path.join(save_path,name)
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s -  %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        level=logging.INFO ,
-        filename=file_path,
-        filemode=mode
-    )
-    logger=logging.getLogger()
-    if chlr and file_path:
-        chlr = logging.StreamHandler()  # 输出到控制台的handler
-        logger.addHandler(chlr)
-    return logger
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -166,13 +147,14 @@ def loss_calc(pred, label, gpu):
     # out shape batch_size x channels x h x w -> batch_size x channels x h x w
     # label shape h x w x 1 x batch_size  -> batch_size x 1 x h x w
     criterion = CrossEntropy2D()
-    label=paddle.to_tensor(label,dtype=paddle.int64)
+    label = paddle.to_tensor(label, dtype=paddle.int64)
     return criterion(pred, label)
+
 
 def main():
     """Create the model and start the training."""
 
-    logger=gen_logger(save_path=args.checkpoint_dir,name=f'{args.model}_train.log')
+    logger = open(os.path.join(args.checkpoint_dir, f'train_{args.model}.log'), 'w')
 
     w, h = map(int, args.input_size.split(','))
     input_size = (w, h)
@@ -194,7 +176,7 @@ def main():
             new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
             # print i_parts
     model.set_state_dict(new_params)
-
+    logger.write('===================== model set success !!! =====================\n')
     model.train()
 
     # init D
@@ -225,19 +207,24 @@ def main():
 
     targetloader_iter = iter(targetloader)
 
+    logger.write('===================== data loader success !!! =====================\n')
+
     # implement model.optim_parameters(args) to handle different models' learning_rate setting
-    learning_rate=PolynomialDecay(args.learning_rate,decay_steps=args.num_steps,power=args.power)
-    optimizer = optim.Momentum(parameters=model.parameters(), learning_rate=learning_rate, momentum=args.momentum,weight_decay=args.weight_decay)
+    learning_rate = PolynomialDecay(args.learning_rate, decay_steps=args.num_steps, power=args.power)
+    optimizer = optim.Momentum(parameters=model.parameters(), learning_rate=learning_rate, momentum=args.momentum,
+                               weight_decay=args.weight_decay)
 
     learning_rate_D1 = PolynomialDecay(args.learning_rate_D, decay_steps=args.num_steps, power=args.power)
-    optimizer_D1 = optim.Adam(parameters=model_D1.parameters(), learning_rate=learning_rate_D1, beta1=0.9,beta2=0.99)
+    optimizer_D1 = optim.Adam(parameters=model_D1.parameters(), learning_rate=learning_rate_D1, beta1=0.9, beta2=0.99)
 
     learning_rate_D2 = PolynomialDecay(args.learning_rate_D, decay_steps=args.num_steps, power=args.power)
-    optimizer_D2 = optim.Adam(parameters=model_D2.parameters(), learning_rate=learning_rate_D2, beta1=0.9,beta2=0.99)
+    optimizer_D2 = optim.Adam(parameters=model_D2.parameters(), learning_rate=learning_rate_D2, beta1=0.9, beta2=0.99)
 
     optimizer.clear_grad()
     optimizer_D1.clear_grad()
     optimizer_D2.clear_grad()
+
+    logger.write('===================== optimizer set success !!! =====================\n')
 
     if args.gan == 'Vanilla':
         bce_loss = paddle.nn.BCEWithLogitsLoss()
@@ -250,6 +237,8 @@ def main():
     # labels for adversarial training
     source_label = 0
     target_label = 1
+
+    logger.write('===================== Train start !!! =====================\n')
 
     for i_iter in range(args.num_steps):
 
@@ -278,7 +267,7 @@ def main():
 
         batch = next(trainloader_iter)
         images, labels, _, _ = batch
-        images = paddle.to_tensor(images,dtype=paddle.float32)
+        images = paddle.to_tensor(images, dtype=paddle.float32)
 
         pred1, pred2 = model(images)
         pred1 = interp(pred1)
@@ -301,7 +290,7 @@ def main():
 
         batch = next(targetloader_iter)
         images, _, _ = batch
-        images = paddle.to_tensor(images,dtype=paddle.float32)
+        images = paddle.to_tensor(images, dtype=paddle.float32)
 
         pred_target1, pred_target2 = model(images)
         pred_target1 = interp_target(pred_target1)
@@ -386,28 +375,34 @@ def main():
         optimizer_D2.step()
 
         print('exp = {}'.format(args.checkpoint_dir))
-        logger.info('exp = {}'.format(args.checkpoint_dir))
+        logger.write('exp = {}\n'.format(args.checkpoint_dir))
         print(
             'iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.4f}, loss_adv2 = {5:.4f} loss_D1 = {6:.4f} loss_D2 = {7:.4f}'.format(
                 i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1,
                 loss_adv_target_value2, loss_D_value1, loss_D_value2))
-        logger.info('iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.4f}, loss_adv2 = {5:.4f} loss_D1 = {6:.4f} loss_D2 = {7:.4f}'.format(
+        logger.write(
+            'iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.4f}, loss_adv2 = {5:.4f} loss_D1 = {6:.4f} loss_D2 = {7:.4f}\n'.format(
                 i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1,
                 loss_adv_target_value2, loss_D_value1, loss_D_value2))
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
-            paddle.save(model.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '.pth'))
+            paddle.save(model.state_dict(),
+                        osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '.pdparams'))
             paddle.save(model_D1.state_dict(),
-                        osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '_D1.pth'))
+                        osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '_D1.pdparams'))
             paddle.save(model_D2.state_dict(),
-                        osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '_D2.pth'))
+                        osp.join(args.checkpoint_dir, 'GTA5_' + str(args.num_steps_stop) + '_D2.pdparams'))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking checkpoint ...')
-            paddle.save(model.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '.pth'))
-            paddle.save(model_D1.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
-            paddle.save(model_D2.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
+            paddle.save(model.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '.pdparams'))
+            paddle.save(model_D1.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '_D1.pdparams'))
+            paddle.save(model_D2.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '_D2.pdparams'))
+    logger.write('===================== Train over !!! =====================\n')
+    logger.close()
+
+
 
 
 if __name__ == '__main__':
