@@ -22,11 +22,19 @@ Please cite our paper if you find it useful for your research.
 
 ## 复现指标
 
-|  Performance  | meanIOU |
-| :-----------: | :-----: |
-|    Target     |  42.35  |
-| iters/(5000)  |   7.    |
-| iters/(10000) |         |
+| iters/(Batch_size=2) | meanIOU |
+| :------------------: | :-----: |
+|        Target        |  42.35  |
+|    latest/(1800)     |  30.67  |
+|                      |         |
+|                      |         |
+|                      |         |
+|                      |         |
+|                      |         |
+|                      |         |
+|                      |         |
+|                      |         |
+|                      |         |
 
 ## Example Results
 
