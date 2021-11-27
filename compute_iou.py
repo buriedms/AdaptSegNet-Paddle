@@ -27,10 +27,10 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
     """
     with open(join(devkit_dir, 'info.json'), 'r') as fp:
       info = json.load(fp)
-    num_classes = np.int(info['classes'])
+    num_classes = int(info['classes'])
     print('Num classes', num_classes)
-    name_classes = np.array(info['label'], dtype=np.str)
-    mapping = np.array(info['label2train'], dtype=np.int)
+    name_classes = np.array(info['label'], dtype=str)
+    mapping = np.array(info['label2train'], dtype=int)
     hist = np.zeros((num_classes, num_classes))
 
     image_path_list = join(devkit_dir, 'val.txt')
@@ -41,7 +41,6 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
     pred_imgs = [join(pred_dir, x.split('/')[-1]) for x in pred_imgs]
 
     for ind in range(len(gt_imgs)):
-        print(pred_imgs[ind])
         pred = np.array(Image.open(pred_imgs[ind]))
         label = np.array(Image.open(gt_imgs[ind]))
         label = label_mapping(label, mapping)
@@ -65,7 +64,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gt_dir', default='data/Cityscapes/data/gtFine',type=str, help='directory which stores CityScapes val gt images')
+    parser.add_argument('gt_dir',type=str, help='directory which stores CityScapes val gt images')
     parser.add_argument('pred_dir', type=str, help='directory which stores CityScapes val pred images')
     parser.add_argument('--devkit_dir', default='dataset/cityscapes_list', help='base directory of cityscapes')
     args = parser.parse_args()

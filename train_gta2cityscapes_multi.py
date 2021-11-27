@@ -1,7 +1,5 @@
 import argparse
 import numpy as np
-import pickle
-import scipy.misc
 
 import paddle
 import paddle.nn as nn
@@ -9,12 +7,11 @@ from paddle.io import DataLoader
 import paddle.optimizer as optim
 import paddle.nn.functional as F
 from paddle.optimizer.lr import PolynomialDecay
+from visualdl import LogWriter
 
-import sys
 import os
 import os.path as osp
-import matplotlib.pyplot as plt
-import random
+import time
 
 from model.deeplab_multi import DeeplabMulti
 from model.discriminator import FCDiscriminator
@@ -27,7 +24,7 @@ IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32
 MODEL = 'DeepLab'
 BATCH_SIZE = 1
 ITER_SIZE = 1
-NUM_WORKERS = 0  # todo 4 -> 0
+NUM_WORKERS = 4  # todo 4 -> 0
 DATA_DIRECTORY = './data/GTA5'
 DATA_LIST_PATH = './dataset/gta5_list/train.txt'
 IGNORE_LABEL = 255
@@ -56,6 +53,7 @@ GAN = 'Vanilla'
 
 TARGET = 'cityscapes'
 SET = 'train'
+
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -134,6 +132,10 @@ def get_arguments():
                         help="choose adaptation set.")
     parser.add_argument("--gan", type=str, default=GAN,
                         help="choose the GAN objective.")
+    parser.add_argument("--continue-train", action="store_true",
+                        help="choose the GAN objective.")
+    parser.add_argument("--start-iter", default='latest', type=str,
+                        help="choose the GAN objective.")
     return parser.parse_args()
 
 
@@ -155,6 +157,7 @@ def main():
     """Create the model and start the training."""
 
     logger = open(os.path.join(args.checkpoint_dir, f'train_{args.model}.log'), 'w')
+    writer = LogWriter(logdir="./logset")
 
     w, h = map(int, args.input_size.split(','))
     input_size = (w, h)
@@ -164,9 +167,24 @@ def main():
 
     gpu = args.gpu
 
-    # Create network
+    # Create init network
     model = DeeplabMulti(num_classes=args.num_classes)
-    saved_state_dict = paddle.load(args.restore_from)
+    model_D1 = FCDiscriminator(num_classes=args.num_classes)
+    model_D2 = FCDiscriminator(num_classes=args.num_classes)
+    
+    # load network
+    if args.continue_train:
+        path=osp.join(args.checkpoint_dir, 'GTA5_' + args.start_iter + '.pdparams')
+        saved_state_dict=paddle.load(path)
+        path=osp.join(args.checkpoint_dir, 'GTA5_' + args.start_iter + '_D1.pdparams')
+        state_D1=paddle.load(path)
+        model_D1.set_state_dict(state_D1)
+        path = osp.join(args.checkpoint_dir, 'GTA5_' + args.start_iter + '_D2.pdparams')
+        state_D2 = paddle.load(path)
+        model_D2.set_state_dict(state_D2)
+    else:
+        saved_state_dict = paddle.load(args.restore_from)
+    model.set_state_dict(saved_state_dict)
     new_params = model.state_dict().copy()
     for i in saved_state_dict:
         # Scale.layer5.conv2d_list.3.weight
@@ -176,16 +194,12 @@ def main():
             new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
             # print i_parts
     model.set_state_dict(new_params)
-    logger.write('===================== model set success !!! =====================\n')
+
     model.train()
-
-    # init D
-    model_D1 = FCDiscriminator(num_classes=args.num_classes)
-    model_D2 = FCDiscriminator(num_classes=args.num_classes)
-
     model_D1.train()
-
     model_D2.train()
+
+    logger.write('===================== model set success !!! =====================\n')
 
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
@@ -220,6 +234,17 @@ def main():
     learning_rate_D2 = PolynomialDecay(args.learning_rate_D, decay_steps=args.num_steps, power=args.power)
     optimizer_D2 = optim.Adam(parameters=model_D2.parameters(), learning_rate=learning_rate_D2, beta1=0.9, beta2=0.99)
 
+    if args.continue_train:
+        path=osp.join(args.checkpoint_dir, 'GTA5_'+args.start_iter+'_optimizer.pdparams')
+        optimizer_state=paddle.load(path)
+        optimizer.set_state_dict(optimizer_state)
+        path = osp.join(args.checkpoint_dir, 'GTA5_' + args.start_iter + '_D1_optimizer.pdparams')
+        optimizer_D1_state = paddle.load(path)
+        optimizer_D1.set_state_dict(optimizer_D1_state)
+        path = osp.join(args.checkpoint_dir, 'GTA5_' + args.start_iter + '_D2_optimizer.pdparams')
+        optimizer_D2_state = paddle.load(path)
+        optimizer_D2.set_state_dict(optimizer_D2_state)
+
     optimizer.clear_grad()
     optimizer_D1.clear_grad()
     optimizer_D2.clear_grad()
@@ -237,10 +262,14 @@ def main():
     # labels for adversarial training
     source_label = 0
     target_label = 1
+    start_iter = 0
 
     logger.write('===================== Train start !!! =====================\n')
 
-    for i_iter in range(args.num_steps):
+    if args.continue_train:
+        start_iter=optimizer._learning_rate.last_epoch
+
+    for i_iter in range(start_iter, args.num_steps):
 
         loss_seg_value1 = 0
         loss_adv_target_value1 = 0
@@ -278,7 +307,6 @@ def main():
         loss = loss_seg2 + args.lambda_seg * loss_seg1
 
         # proper normalization
-        loss = loss
         loss.backward()
 
         loss_seg_value1 += loss_seg1.cpu().numpy()[0]
@@ -306,7 +334,6 @@ def main():
         loss_adv_target2 = bce_loss(D_out2, D_out2_label)
 
         loss = args.lambda_adv_target1 * loss_adv_target1 + args.lambda_adv_target2 * loss_adv_target2
-        loss = loss
         loss.backward()
         loss_adv_target_value1 += loss_adv_target1.cpu().numpy()[0]
         loss_adv_target_value2 += loss_adv_target2.cpu().numpy()[0]
@@ -373,6 +400,9 @@ def main():
         optimizer.step()
         optimizer_D1.step()
         optimizer_D2.step()
+        optimizer._learning_rate.step()
+        optimizer_D1._learning_rate.step()
+        optimizer_D2._learning_rate.step()
 
         print('exp = {}'.format(args.checkpoint_dir))
         logger.write('exp = {}\n'.format(args.checkpoint_dir))
@@ -380,10 +410,23 @@ def main():
             'iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.4f}, loss_adv2 = {5:.4f} loss_D1 = {6:.4f} loss_D2 = {7:.4f}'.format(
                 i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1,
                 loss_adv_target_value2, loss_D_value1, loss_D_value2))
+        time_now=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        logger.write(time_now)
         logger.write(
             'iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.4f}, loss_adv2 = {5:.4f} loss_D1 = {6:.4f} loss_D2 = {7:.4f}\n'.format(
                 i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1,
                 loss_adv_target_value2, loss_D_value1, loss_D_value2))
+
+        writer.add_scalar(tag="loss_seg1", step=i_iter, value=loss_seg_value1)
+        writer.add_scalar(tag="loss_seg2", step=i_iter, value=loss_seg_value2)
+        writer.add_scalar(tag="loss_adv1", step=i_iter, value=loss_adv_target_value1)
+        writer.add_scalar(tag="loss_adv2", step=i_iter, value=loss_adv_target_value2)
+        writer.add_scalar(tag="loss_D1", step=i_iter, value=loss_D_value1)
+        writer.add_scalar(tag="loss_D2", step=i_iter, value=loss_D_value2)
+        writer.add_scalar(tag='optimizer_lr',step=i_iter,value=optimizer.get_lr())
+        writer.add_scalar(tag='optimizer_D1_lr', step=i_iter, value=optimizer_D1.get_lr())
+        writer.add_scalar(tag='optimizer_D2_lr', step=i_iter, value=optimizer_D2.get_lr())
+
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
             paddle.save(model.state_dict(),
@@ -398,10 +441,17 @@ def main():
             paddle.save(model.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '.pdparams'))
             paddle.save(model_D1.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '_D1.pdparams'))
             paddle.save(model_D2.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_' + str(i_iter) + '_D2.pdparams'))
+        if i_iter % 100 == 0 and i_iter != 0:
+            paddle.save(model.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_latest.pdparams'))
+            paddle.save(model_D1.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_latest_D1.pdparams'))
+            paddle.save(model_D2.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_latest_D2.pdparams'))
+
+            paddle.save(optimizer.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_latest_optimizer.pdparams'))
+            paddle.save(optimizer_D1.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_latest_D1_optimizer.pdparams'))
+            paddle.save(optimizer_D2.state_dict(), osp.join(args.checkpoint_dir, 'GTA5_latest_D2_optimizer.pdparams'))
+
     logger.write('===================== Train over !!! =====================\n')
     logger.close()
-
-
 
 
 if __name__ == '__main__':

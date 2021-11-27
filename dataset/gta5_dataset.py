@@ -3,7 +3,6 @@ import os.path as osp
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-import collections
 from paddle.io import Dataset,DataLoader
 import paddlevision
 from PIL import Image

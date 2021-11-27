@@ -15,7 +15,6 @@ from paddle.io import DataLoader
 from model.deeplab_multi import DeeplabMulti
 from dataset.cityscapes_dataset import cityscapesDataSet
 from compute_iou import compute_mIoU
-from collections import OrderedDict
 import os
 from PIL import Image
 
@@ -75,9 +74,9 @@ def get_arguments():
                         help="choose evaluation set.")
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
-    parser.add_argument('--devkit_dir', default='dataset/cityscapes_list',
+    parser.add_argument('--devkit-dir', default='dataset/cityscapes_list',
                         help='base directory of cityscapes')
-    parser.add_argument('--gt_dir', default=os.path.join(DATA_DIRECTORY,'gtFine'), type=str,
+    parser.add_argument('--gt-dir', default='./data/Cityscapes/data/gtFine/val', type=str,
                         help='directory which stores CityScapes val gt images')
     return parser.parse_args()
 
@@ -128,7 +127,7 @@ def main():
         name = name[0].split('/')[-1]
         output.save('%s/%s' % (args.save, name))
         output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
-    compute_mIoU(gt_dir=args.gt_dir,pred_dir=args.save,devkit_dir=args.devkit)
+    compute_mIoU(gt_dir=args.gt_dir,pred_dir=args.save,devkit_dir=args.devkit_dir)
 
 
 if __name__ == '__main__':

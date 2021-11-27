@@ -20,6 +20,14 @@ Please cite our paper if you find it useful for your research.
 }
 ```
 
+## 复现指标
+
+|  Performance  | meanIOU |
+| :-----------: | :-----: |
+|    Target     |  42.35  |
+| iters/(5000)  |   7.    |
+| iters/(10000) |         |
+
 ## Example Results
 
 ![](figure/result_git.png)
@@ -73,6 +81,35 @@ python evaluate_cityscapes.py --restore-from ./model/GTA2Cityscapes_multi-ed3515
 python evaluate_cityscapes.py --model DeeplabVGG --restore-from ./model/GTA2Cityscapes_vgg-ac4ac9f6.pth
 ```
 
+
+```
+0 processd
+100 processd
+200 processd
+300 processd
+400 processd
+Num classes 19
+===>road:	86.46
+===>sidewalk:	35.96
+===>building:	79.92
+===>wall:	23.41
+===>fence:	23.27
+===>pole:	23.87
+===>light:	35.24
+===>sign:	14.77
+===>vegetation:	83.35
+===>terrain:	33.25
+===>sky:	75.62
+===>person:	58.49
+===>rider:	27.55
+===>car:	73.65
+===>truck:	32.48
+===>bus:	35.42
+===>train:	3.85
+===>motocycle:	30.05
+===>bicycle:	28.11
+===> mIoU: 42.35
+```
 * Compute the IoU on Cityscapes (thanks to the code from [VisDA Challenge](http://ai.bu.edu/visda-2017/))
 ```
 python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
@@ -118,7 +155,6 @@ The model and code are available for non-commercial research purposes only.
 * 07/23/2018: update evaluation code for PyTorch 0.4
 * 06/04/2018: update pretrained VGG-16 model 
 * 02/2018: code released
-
 
 
 
