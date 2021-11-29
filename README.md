@@ -17,7 +17,7 @@ IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2018 (**spotl
 | :-----------------------: | :-----: |
 |          Target           |  42.35  |
 |       Best/(99000)        |  42.7   |
-|      latest/(100000)      |  42.32  |
+|      latest/(100000)      |  41.58  |
 |           5000            |  34.29  |
 |           10000           |  37.59  |
 |           15000           |  38.84  |
@@ -37,7 +37,7 @@ IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2018 (**spotl
 |           85000           |  42.11  |
 |           90000           |  42.14  |
 |           95000           |  40.72  |
-|                           |         |
+|          100000           |  41.58  |
 
 ## Example Results
 
@@ -76,15 +76,15 @@ data
 ║   ╚═══data
 ║       ╠═══gtFine
 ║       ║   ╠═══test  
-║ 		║   ╠═══train  
-║		║   ╚═══val  
-║		╚══leftimg8bit  
+║       ║   ╠═══train  
+║       ║   ╚═══val  
+║       ╚═══leftimg8bit  
 ║           ╠═══test  
-║ 		    ╠═══train  
-║		    ╚═══val  
+║           ╠═══train  
+║           ╚═══val  
 ╚═══GTA5  
     ╠═══images  
-	╚═══labels  
+    ╚═══labels  g
 ```
 
 
