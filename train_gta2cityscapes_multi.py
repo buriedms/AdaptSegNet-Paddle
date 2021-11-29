@@ -156,7 +156,7 @@ def loss_calc(pred, label, gpu):
 def main():
     """Create the model and start the training."""
 
-    logger = open(os.path.join(args.checkpoint_dir, f'train_{args.model}.log'), 'w')
+    logger = open(os.path.join(args.checkpoint_dir, f'train_{args.model}.log'), 'a')
     writer = LogWriter(logdir="./logset")
 
     w, h = map(int, args.input_size.split(','))
