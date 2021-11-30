@@ -4,7 +4,7 @@
 
 将语义分割从合成数据集（源域）调整到真实数据集（目标域）的方法的PaddlePaddle实现。
 
-点击[此处]()可跳转aistudio项目，直接运行项目。
+点击[此处](https://aistudio.baidu.com/aistudio/projectdetail/3056745?shared=1)可跳转aistudio项目，直接运行项目。
 
 ## Paper
 [Learning to Adapt Structured Output Space for Semantic Segmentation](https://arxiv.org/abs/1802.10349) <br />
@@ -48,9 +48,10 @@ IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2018 (**spotl
 
 **注意**：
 
-​	（1）GTA5数据集需要全部下载并且解压至同一个文件下，可通过这个[repo](https://github.com/buriedms/Utils.git)当中所提供的`unzips.py`脚本进行数据集的批量解压
+​	（1）GTA5数据集需要全部下载并且解压至同一个文件下，可通过这个[repo](https://github.com/buriedms/Utils)当中所提供的`unzips.py`脚本进行数据集的批量解压
 
-​	（2）下载Cityscapes数据集包括gtFine和leftimg8bit两个数据集，但是仅用到gtFine的验证集部分的灰度图和在leftimg8bit中对应验证集的原始照片和训练照片，可以通过这个[repo](https://github.com/buriedms/Utils.git)当中所提供的`copy_by_txt.py`脚本进行数据集的制作。详细使用图片可通过`dataset/cityscapes_list`当中`train.txt`、`val.txt`、`label.txt`文件进行查看
+​	（2）下载Cityscapes数据集包括gtFine和leftimg8bit两个数据集，但是仅用到gtFine的验证集部分的灰度图和在leftimg8bit中对应验证集的原始照片和训练照片，
+可以通过这个[repo](https://github.com/buriedms/Utils)当中所提供的`copy_by_txt.py`脚本进行数据集的制作。详细使用图片可通过`dataset/cityscapes_list`当中`train.txt`、`val.txt`、`label.txt`文件进行查看
 
 ### 2. 通过aistudio开源数据集获取数据集
 
@@ -89,8 +90,7 @@ data
 * 使用以下代码测试模型，并且模型将会保存在`result`文件夹下（restore-from：模型文件路径）
 
 ```
-python evaluate_cityscapes.py --restore-from ./model/GTA2Cityscapes_multi-ed35151c.pth \
-                              --data-dir [your data path] 
+python evaluate_cityscapes.py --restore-from ./model/GTA2Cityscapes_multi-ed35151c.pth 
 ```
 
 * 测试结果案例：
@@ -133,8 +133,7 @@ python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
 * **重新训练**GTA5-to-Cityscapes模型 (multi-level)
 
 ```
-python train_gta2cityscapes_multi.py --data-dir [your data path] \
-                                     --checkpoint-dir ./checkpoint/GTA2Cityscapes_multi \
+python train_gta2cityscapes_multi.py --checkpoint-dir ./checkpoint/GTA2Cityscapes_multi \
                                      --lambda-seg 0.1 \
                                      --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001
 ```
@@ -142,8 +141,7 @@ python train_gta2cityscapes_multi.py --data-dir [your data path] \
 * **继续训练**GTA5-to-Cityscapes模型 (multi-level)
 
 ```
-python train_gta2cityscapes_multi.py --data-dir [your data path] \
-                                     --checkpoint-dir ./checkpoint/GTA2Cityscapes_multi \
+python train_gta2cityscapes_multi.py --checkpoint-dir ./checkpoint/GTA2Cityscapes_multi \
                                      --lambda-seg 0.1 \
                                      --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001 \
                                      --start-iter latest \
@@ -159,7 +157,7 @@ python train_gta2cityscapes_multi.py --data-dir [your data path] \
 | start-iter     | 持续学习开始的iter数，默认为latest，即从上次保存点开始，启动持续学习时有效 |
 
 ## Acknowledgment
-Pytorch版本的原仓库：[AdaptSegNet]()。
+Pytorch版本的原仓库：[AdaptSegNet](https://github.com/wasidennis/AdaptSegNet)。
 
 
 
