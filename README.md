@@ -130,6 +130,7 @@ python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
 ```
 
 ## 训练启动
+
 * **重新训练**GTA5-to-Cityscapes模型 (multi-level)
 
 ```
@@ -155,6 +156,9 @@ python train_gta2cityscapes_multi.py --checkpoint-dir ./checkpoint/GTA2Cityscape
 | checkpoint-dir | 模型结果及日志保存位置                                       |
 | continue-train | 是否启用持续学习策略（触发有效）                             |
 | start-iter     | 持续学习开始的iter数，默认为latest，即从上次保存点开始，启动持续学习时有效 |
+
+
+**注意：**训练日志存放在`checkpoint-dir`目录下
 
 ## Acknowledgment
 Pytorch版本的原仓库：[AdaptSegNet](https://github.com/wasidennis/AdaptSegNet)。
