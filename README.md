@@ -44,11 +44,11 @@ IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2018 (**spotl
 
 ## Example Results
 
-![](figure/result.png)
+![img1](figure/result.png)
 
 ## Quantitative Reuslts
 
-![](figure/iou_comparison_v2.png)
+![img2](figure/iou_comparison_v2.png)
 
 ## 数据集
 
