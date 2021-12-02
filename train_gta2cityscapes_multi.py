@@ -156,6 +156,9 @@ def loss_calc(pred, label, gpu):
 def main():
     """Create the model and start the training."""
 
+    if not os.path.exists(args.checkpoint_dir):
+        os.makedirs(args.checkpoint_dir)
+
     logger = open(os.path.join(args.checkpoint_dir, f'train_{args.model}.log'), 'a')
     writer = LogWriter(logdir="./logset")
 
@@ -200,9 +203,6 @@ def main():
     model_D2.train()
 
     logger.write('===================== model set success !!! =====================\n')
-
-    if not os.path.exists(args.checkpoint_dir):
-        os.makedirs(args.checkpoint_dir)
 
     trainloader = DataLoader(
         GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.batch_size,
